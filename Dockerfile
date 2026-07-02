@@ -45,6 +45,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 ENV CHROME_BIN=/usr/bin/chromium
+ENV CHROMIUM_BIN=/usr/bin/chromium
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
@@ -59,7 +60,9 @@ COPY --from=builder /app/node_modules/chrome-launcher ./node_modules/chrome-laun
 COPY --from=builder /app/node_modules/chrome-remote-interface ./node_modules/chrome-remote-interface
 COPY --from=builder /app/shopee.co.id.txt ./shopee.co.id.txt
 
-USER nextjs
+RUN chown -R nextjs:nodejs /app
+
+USER root
 
 EXPOSE 3000
 ENV PORT=3000
