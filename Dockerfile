@@ -1,6 +1,6 @@
 FROM node:20-slim AS base
 
-# Install Chrome and xvfb dependencies
+# Install Chrome, xvfb, dbus and dependencies
 RUN apt-get update && apt-get install -y \
     chromium \
     xvfb \
@@ -22,7 +22,6 @@ RUN apt-get update && apt-get install -y \
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 ENV CHROME_BIN=/usr/bin/chromium
-ENV CHROMIUM_BIN=/usr/bin/chromium
 
 # Dependencies stage
 FROM base AS deps
@@ -47,7 +46,6 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 ENV CHROME_BIN=/usr/bin/chromium
-ENV CHROMIUM_BIN=/usr/bin/chromium
 ENV DISPLAY=:99
 
 RUN addgroup --system --gid 1001 nodejs
@@ -71,4 +69,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["sh", "-c", "dbus-daemon --system --fork 2>/dev/null; Xvfb :99 -screen 0 1920x1080x24 -ac & sleep 1 && node server.js"]
+CMD ["sh", "-c", "mkdir -p /run/dbus && dbus-daemon --system --fork 2>/dev/null; Xvfb :99 -screen 0 1920x1080x24 -ac & sleep 2 && exec node server.js"]

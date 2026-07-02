@@ -56,29 +56,29 @@ async function getBrowser() {
         "--disable-dev-shm-usage",
         "--disable-setuid-sandbox",
         "--no-zygote",
+        "--disable-dbus",
       ],
-      logLevel: "verbose",
     });
 
     console.log("[Shopee] Chrome launched on port", chrome.port);
     
     let client: any = null;
-    for (let attempt = 0; attempt < 5; attempt++) {
+    for (let attempt = 0; attempt < 10; attempt++) {
       try {
         client = await CDP({ port: chrome.port });
         break;
       } catch (e) {
-        console.log(`[Shopee] CDP connect attempt ${attempt + 1} failed, retrying...`);
-        await new Promise((r) => setTimeout(r, 1000));
+        console.log(`[Shopee] CDP connect attempt ${attempt + 1} failed`);
+        await new Promise((r) => setTimeout(r, 2000));
       }
     }
     if (!client) {
-      console.error("[Shopee] Failed to connect to Chrome after 5 attempts");
+      console.error("[Shopee] Failed to connect to Chrome after 10 attempts");
       await chrome.kill();
       return null;
     }
-    const { Network, Page } = client;
 
+    const { Network, Page } = client;
     await Network.enable();
     await Page.enable();
 
@@ -93,7 +93,7 @@ async function getBrowser() {
     browserPool = { chrome, client, ready: true };
     return browserPool;
   } catch (e) {
-    console.error("Failed to launch Chrome:", e);
+    console.error("[Shopee] Failed to launch Chrome:", e);
     return null;
   }
 }
@@ -161,7 +161,6 @@ function parseItems(data: any): ScrapedProduct[] {
     const b = item.item_basic;
     const price = Math.round(b.price / 100000);
     const priceMin = Math.round(b.price_min / 100000);
-    const priceMax = Math.round(b.price_max / 100000);
     const priceBefore = b.price_before_discount
       ? Math.round(b.price_before_discount / 100000)
       : 0;
@@ -214,7 +213,6 @@ export async function scrapeShopee(
   const pageNum = (opts.page || 1) - 1;
   const keyword = opts.query;
 
-  // Try Partner API first
   const partnerId = process.env.SHOPEE_PARTNER_ID;
   const apiKey = process.env.SHOPEE_API_KEY;
   if (partnerId && apiKey) {
@@ -276,7 +274,6 @@ export async function scrapeShopee(
     } catch {}
   }
 
-  // Chrome CDP approach (required for Shopee anti-crawler)
   const data = await searchItems(keyword, limit, pageNum);
   if (data && data.items && data.items.length > 0) {
     const products = parseItems(data);
