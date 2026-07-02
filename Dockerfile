@@ -4,6 +4,7 @@ FROM node:20-slim AS base
 RUN apt-get update && apt-get install -y \
     chromium \
     xvfb \
+    dbus \
     fonts-ipafont-gothic \
     fonts-wqy-zenhei \
     fonts-thai-tlwg \
@@ -70,4 +71,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["sh", "-c", "Xvfb :99 -screen 0 1920x1080x24 -ac & sleep 1 && node server.js"]
+CMD ["sh", "-c", "dbus-daemon --system --fork 2>/dev/null; Xvfb :99 -screen 0 1920x1080x24 -ac & sleep 1 && node server.js"]

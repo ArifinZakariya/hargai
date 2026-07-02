@@ -55,6 +55,7 @@ async function getBrowser() {
         "--disable-gpu",
         "--disable-dev-shm-usage",
         "--disable-setuid-sandbox",
+        "--no-zygote",
       ],
       logLevel: "verbose",
     });
