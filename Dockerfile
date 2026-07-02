@@ -57,7 +57,6 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/node_modules/chrome-launcher ./node_modules/chrome-launcher
 COPY --from=builder /app/node_modules/chrome-remote-interface ./node_modules/chrome-remote-interface
-COPY --from=builder /app/node_modules/lighthouse ./node_modules/lighthouse
 COPY --from=builder /app/shopee.co.id.txt ./shopee.co.id.txt
 
 USER nextjs
