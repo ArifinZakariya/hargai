@@ -3,7 +3,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import "./globals.css";
 
 export const metadata = {
-  title: "ProcureAI - Cari & Bandingkan Harga",
+  title: "HARGAI - Belanja Lebih Bijak",
   description: "Scrape produk dari Shopee & Tokopedia, bandingkan harga, temukan yang termurah.",
 };
 

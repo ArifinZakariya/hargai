@@ -6,7 +6,7 @@ import { createHmac } from "crypto";
 const PARTNER_URL = "https://partner.shopeemobile.com/api/v2";
 
 function imageUrl(imgId: string): string {
-  return imgId ? `https://down-id.img.shopeeusercontent.com/file/${imgId}` : "";
+  return imgId ? `https://cf.shopee.co.id/file/${imgId}` : "";
 }
 
 function parseCookies(filePath: string) {

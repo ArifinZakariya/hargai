@@ -34,8 +34,8 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                 <Package className="h-5 w-5" />
               </div>
               <div className="flex flex-col">
-                <span className="text-base font-bold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">ProcureAI</span>
-                <span className="text-[10px] text-muted-foreground">Scrape & Compare</span>
+                <span className="text-base font-bold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">HARGAI</span>
+                <span className="text-[10px] text-muted-foreground">Belanja Lebih Bijak</span>
               </div>
             </div>
             <button onClick={onClose} className="lg:hidden p-1 rounded-lg hover:bg-accent">

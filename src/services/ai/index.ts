@@ -43,7 +43,7 @@ class AIService {
     ).join("\n");
 
     const { content } = await this.call([
-      { role: "system", content: "Kamu adalah ProcureAI, ahli procurement Indonesia. Analisis produk berikut dan berikan rekomendasi BELI. Jawab dalam Bahasa Indonesia, singkat dan jelas." },
+      { role: "system", content: "Kamu adalah HARGAI, ahli procurement Indonesia. Analisis produk berikut dan berikan rekomendasi BELI. Jawab dalam Bahasa Indonesia, singkat dan jelas." },
       { role: "user", content: `Bandingkan produk ini:\n${list}\n\nBerikan: 1) Rekomendasi mana yang beli, 2) Analisis harga & value, 3) Pro & Con masing-masing, 4) Kesimpulan.` },
     ], 0.5);
     return content;
@@ -51,7 +51,7 @@ class AIService {
 
   async chat(message: string, history?: { role: string; content: string }[]): Promise<string> {
     const { content } = await this.call([
-      { role: "system", content: "Kamu adalah ProcureAI, asisten procurement. Bantu user mencari produk termurah dari Tokopedia, bandingkan harga, dan berikan rekomendasi. Jawab dalam Bahasa Indonesia. Singkat." },
+      { role: "system", content: "Kamu adalah HARGAI, asisten procurement. Bantu user mencari produk termurah dari Tokopedia, bandingkan harga, dan berikan rekomendasi. Jawab dalam Bahasa Indonesia. Singkat." },
       ...(history || []),
       { role: "user", content: message },
     ]);
