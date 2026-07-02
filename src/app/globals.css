@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-background: oklch(1 0 0);
+  --color-foreground: oklch(0.145 0 0);
+  --color-card: oklch(1 0 0);
+  --color-card-foreground: oklch(0.145 0 0);
+  --color-popover: oklch(1 0 0);
+  --color-popover-foreground: oklch(0.145 0 0);
+  --color-primary: oklch(0.205 0.042 265.755);
+  --color-primary-foreground: oklch(0.985 0 0);
+  --color-secondary: oklch(0.97 0 0);
+  --color-secondary-foreground: oklch(0.205 0 0);
+  --color-muted: oklch(0.97 0 0);
+  --color-muted-foreground: oklch(0.556 0 0);
+  --color-accent: oklch(0.97 0 0);
+  --color-accent-foreground: oklch(0.205 0 0);
+  --color-destructive: oklch(0.577 0.245 27.325);
+  --color-destructive-foreground: oklch(0.985 0 0);
+  --color-border: oklch(0.922 0 0);
+  --color-input: oklch(0.922 0 0);
+  --color-ring: oklch(0.708 0 0);
+
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+
+  @keyframes accordion-down {
+    from { height: 0; }
+    to { height: var(--radix-accordion-content-height); }
+  }
+
+  @keyframes accordion-up {
+    from { height: var(--radix-accordion-content-height); }
+    to { height: 0; }
+  }
+}
+
+.dark {
+  --color-background: oklch(0.145 0 0);
+  --color-foreground: oklch(0.985 0 0);
+  --color-card: oklch(0.145 0 0);
+  --color-card-foreground: oklch(0.985 0 0);
+  --color-popover: oklch(0.145 0 0);
+  --color-popover-foreground: oklch(0.985 0 0);
+  --color-primary: oklch(0.985 0 0);
+  --color-primary-foreground: oklch(0.205 0.042 265.755);
+  --color-secondary: oklch(0.269 0 0);
+  --color-secondary-foreground: oklch(0.985 0 0);
+  --color-muted: oklch(0.269 0 0);
+  --color-muted-foreground: oklch(0.708 0 0);
+  --color-accent: oklch(0.269 0 0);
+  --color-accent-foreground: oklch(0.985 0 0);
+  --color-destructive: oklch(0.396 0.141 25.723);
+  --color-destructive-foreground: oklch(0.985 0 0);
+  --color-border: oklch(0.269 0 0);
+  --color-input: oklch(0.269 0 0);
+  --color-ring: oklch(0.439 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .glass {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  .dark .glass {
+    background: rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+}
+
+@layer components {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: oklch(0.708 0 0) transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: oklch(0.708 0 0);
+    border-radius: 3px;
+  }
+}
