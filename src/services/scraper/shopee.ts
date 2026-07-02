@@ -61,20 +61,25 @@ async function getBrowser() {
     });
 
     console.log("[Shopee] Chrome launched on port", chrome.port);
-    
+
     let client: any = null;
-    for (let attempt = 0; attempt < 10; attempt++) {
+    for (let attempt = 0; attempt < 15; attempt++) {
       try {
         client = await CDP({ port: chrome.port });
         break;
-      } catch (e) {
-        console.log(`[Shopee] CDP connect attempt ${attempt + 1} failed`);
+      } catch (e: any) {
+        console.log(
+          `[Shopee] CDP connect attempt ${attempt + 1} failed:`,
+          e.message
+        );
         await new Promise((r) => setTimeout(r, 2000));
       }
     }
     if (!client) {
-      console.error("[Shopee] Failed to connect to Chrome after 10 attempts");
-      await chrome.kill();
+      console.error("[Shopee] Failed to connect to Chrome after 15 attempts");
+      try {
+        await chrome.kill();
+      } catch {}
       return null;
     }
 
@@ -226,7 +231,11 @@ export async function scrapeShopee(
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ keyword, page_size: limit, page_number: pageNum + 1 }),
+          body: JSON.stringify({
+            keyword,
+            page_size: limit,
+            page_number: pageNum + 1,
+          }),
           signal: AbortSignal.timeout(15000),
         }
       );
@@ -238,7 +247,9 @@ export async function scrapeShopee(
             products: items.map((item: any) => ({
               externalId: String(item.item_id || ""),
               name: item.item_name || "",
-              slug: (item.item_name || "").toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+              slug: (item.item_name || "")
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, "-"),
               url: `https://shopee.co.id/product/${item.shop_id || ""}/${item.item_id || ""}`,
               imageUrl: item.image ? imageUrl(item.image) : "",
               images: (item.images || []).map((i: string) => imageUrl(i)),
@@ -265,7 +276,9 @@ export async function scrapeShopee(
             })),
             total: json?.response?.total || items.length,
             page: opts.page || 1,
-            totalPages: Math.ceil((json?.response?.total || items.length) / limit),
+            totalPages: Math.ceil(
+              (json?.response?.total || items.length) / limit
+            ),
             source: "shopee",
             scrapedAt: new Date().toISOString(),
           };

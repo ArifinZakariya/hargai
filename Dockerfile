@@ -1,6 +1,5 @@
 FROM node:20-slim AS base
 
-# Install Chrome, xvfb, dbus and dependencies
 RUN apt-get update && apt-get install -y \
     chromium \
     xvfb \
@@ -16,6 +15,7 @@ RUN apt-get update && apt-get install -y \
     libatk-bridge2.0-0 \
     libgtk-3-0 \
     libgbm1 \
+    procps \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
@@ -23,13 +23,11 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 ENV CHROME_BIN=/usr/bin/chromium
 
-# Dependencies stage
 FROM base AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
-# Build stage
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
@@ -37,7 +35,6 @@ COPY . .
 RUN npx prisma generate
 RUN npm run build
 
-# Production stage
 FROM base AS runner
 WORKDIR /app
 
@@ -69,4 +66,20 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["sh", "-c", "mkdir -p /run/dbus && dbus-daemon --system --fork 2>/dev/null; Xvfb :99 -screen 0 1920x1080x24 -ac & sleep 2 && exec node server.js"]
+COPY <<'STARTSCRIPT' /app/start.sh
+#!/bin/sh
+set -e
+
+mkdir -p /run/dbus
+dbus-daemon --system --fork 2>/dev/null || true
+
+Xvfb :99 -screen 0 1920x1080x24 -ac -nolisten tcp &
+sleep 2
+
+echo "Xvfb started. DISPLAY=$DISPLAY"
+exec node server.js
+STARTSCRIPT
+
+RUN chmod +x /app/start.sh
+
+CMD ["/app/start.sh"]
