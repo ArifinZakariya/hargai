@@ -47,6 +47,7 @@ async function getBrowser() {
     const CDP = require("chrome-remote-interface");
 
     const chrome = await chromeLauncher.launch({
+      chromePath: process.env.CHROME_BIN || undefined,
       chromeFlags: [
         "--no-first-run",
         "--disable-extensions",
@@ -55,9 +56,26 @@ async function getBrowser() {
         "--disable-dev-shm-usage",
         "--disable-setuid-sandbox",
       ],
+      logLevel: "verbose",
     });
 
-    const client = await CDP({ port: chrome.port });
+    console.log("[Shopee] Chrome launched on port", chrome.port);
+    
+    let client: any = null;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      try {
+        client = await CDP({ port: chrome.port });
+        break;
+      } catch (e) {
+        console.log(`[Shopee] CDP connect attempt ${attempt + 1} failed, retrying...`);
+        await new Promise((r) => setTimeout(r, 1000));
+      }
+    }
+    if (!client) {
+      console.error("[Shopee] Failed to connect to Chrome after 5 attempts");
+      await chrome.kill();
+      return null;
+    }
     const { Network, Page } = client;
 
     await Network.enable();
