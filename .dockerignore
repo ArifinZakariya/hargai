@@ -7,4 +7,4 @@ node_modules
 README.md
 devlog.txt
 test-chrome-launcher.cjs
-shopee.co.id.txt
+# shopee.co.id.txt needed for scraper

@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
 
   const result = await scrape({
     query,
-    marketplace: (sp.get("marketplace") as any) || "SHOPEE",
+    marketplace: (sp.get("marketplace")?.toUpperCase() as any) || "SHOPEE",
     minPrice: sp.get("minPrice") ? Number(sp.get("minPrice")) : undefined,
     maxPrice: sp.get("maxPrice") ? Number(sp.get("maxPrice")) : undefined,
     minRating: sp.get("minRating") ? Number(sp.get("minRating")) : undefined,

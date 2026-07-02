@@ -4,54 +4,135 @@ import path from "path";
 import { createHmac } from "crypto";
 
 const PARTNER_URL = "https://partner.shopeemobile.com/api/v2";
-const SHOPEE_API = "https://shopee.co.id/api/v4/search/search_items";
 
 function imageUrl(imgId: string): string {
   return imgId ? `https://cf.shopee.co.id/file/${imgId}` : "";
 }
 
-function parseCookies(filePath: string): string {
+function parseCookies(filePath: string) {
   try {
     const text = readFileSync(path.join(process.cwd(), filePath), "utf-8");
-    const cookies = text
+    return text
       .split("\n")
       .filter((l) => l.trim() && !l.startsWith("#"))
       .map((l) => {
         const p = l.split("\t");
-        return { name: p[5], value: p[6] };
+        return {
+          name: p[5],
+          value: p[6],
+          domain: p[0] || "",
+          path: p[2] || "/",
+          secure: p[3] === "TRUE",
+          httpOnly: false,
+        };
       })
       .filter((c) => c.name && c.value);
-    return cookies.map((c) => `${c.name}=${c.value}`).join("; ");
   } catch {
-    return "";
+    return [];
   }
 }
 
-function getHeaders(cookieStr: string) {
-  return {
-    "Accept": "application/json",
-    "Accept-Language": "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7",
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
-    "Referer": "https://shopee.co.id/",
-    "Cookie": cookieStr,
-  };
+let browserPool: {
+  chrome: any;
+  client: any;
+  ready: boolean;
+} | null = null;
+
+async function getBrowser() {
+  if (browserPool?.ready) return browserPool;
+  if (browserPool && !browserPool.ready) return null;
+
+  try {
+    const chromeLauncher = require("chrome-launcher");
+    const CDP = require("chrome-remote-interface");
+
+    const chrome = await chromeLauncher.launch({
+      chromeFlags: [
+        "--no-first-run",
+        "--disable-extensions",
+        "--no-sandbox",
+        "--disable-gpu",
+        "--disable-dev-shm-usage",
+        "--disable-setuid-sandbox",
+      ],
+    });
+
+    const client = await CDP({ port: chrome.port });
+    const { Network, Page } = client;
+
+    await Network.enable();
+    await Page.enable();
+
+    const cookies = parseCookies("shopee.co.id.txt");
+    for (const c of cookies) {
+      await Network.setCookie(c);
+    }
+
+    await Page.navigate({ url: "https://shopee.co.id/" });
+    await new Promise((r) => setTimeout(r, 5000));
+
+    browserPool = { chrome, client, ready: true };
+    return browserPool;
+  } catch (e) {
+    console.error("Failed to launch Chrome:", e);
+    return null;
+  }
 }
 
-async function fetchShopeeApi(
+async function closeBrowser() {
+  if (browserPool) {
+    try {
+      await browserPool.client.close();
+      await browserPool.chrome.kill();
+    } catch {}
+    browserPool = null;
+  }
+}
+
+async function searchItems(
   keyword: string,
   limit: number,
-  offset: number,
-  cookieStr: string
+  offset: number
 ): Promise<any> {
-  const url = `${SHOPEE_API}?keyword=${encodeURIComponent(keyword)}&limit=${limit}&page=${offset}&by=relevancy&order=desc`;
+  const browser = await getBrowser();
+  if (!browser) return null;
 
-  const res = await fetch(url, {
-    headers: getHeaders(cookieStr),
-    signal: AbortSignal.timeout(15000),
-  });
+  const { client } = browser;
+  const { Runtime } = client;
 
-  if (!res.ok) return null;
-  return await res.json();
+  try {
+    const result = await Runtime.evaluate({
+      expression: `
+        (async () => {
+          try {
+            const res = await fetch('https://shopee.co.id/api/v4/search/search_items?keyword=${encodeURIComponent(keyword)}&limit=${limit}&page=${offset}&by=relevancy&order=desc', {
+              headers: { 'Accept': 'application/json' },
+              credentials: 'include',
+            });
+            return await res.text();
+          } catch(e) {
+            return JSON.stringify({ error: e.message });
+          }
+        })()
+      `,
+      awaitPromise: true,
+    });
+
+    if (result.result.value) {
+      const parsed = JSON.parse(result.result.value);
+      if (parsed.error) {
+        await closeBrowser();
+        browserPool = null;
+        return null;
+      }
+      return parsed;
+    }
+  } catch (e) {
+    await closeBrowser();
+    browserPool = null;
+  }
+
+  return null;
 }
 
 function parseItems(data: any): ScrapedProduct[] {
@@ -128,11 +209,7 @@ export async function scrapeShopee(
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            keyword,
-            page_size: limit,
-            page_number: pageNum + 1,
-          }),
+          body: JSON.stringify({ keyword, page_size: limit, page_number: pageNum + 1 }),
           signal: AbortSignal.timeout(15000),
         }
       );
@@ -171,9 +248,7 @@ export async function scrapeShopee(
             })),
             total: json?.response?.total || items.length,
             page: opts.page || 1,
-            totalPages: Math.ceil(
-              (json?.response?.total || items.length) / limit
-            ),
+            totalPages: Math.ceil((json?.response?.total || items.length) / limit),
             source: "shopee",
             scrapedAt: new Date().toISOString(),
           };
@@ -182,40 +257,19 @@ export async function scrapeShopee(
     } catch {}
   }
 
-  // Direct HTTP approach (fast, no Chrome needed)
-  const cookieStr = parseCookies("shopee.co.id.txt");
-  if (cookieStr) {
-    try {
-      const data = await fetchShopeeApi(keyword, limit, pageNum, cookieStr);
-      if (data && data.items && data.items.length > 0) {
-        const products = parseItems(data);
-        return {
-          products,
-          total: data.total_count || products.length,
-          page: opts.page || 1,
-          totalPages: Math.ceil((data.total_count || products.length) / limit),
-          source: "shopee",
-          scrapedAt: new Date().toISOString(),
-        };
-      }
-    } catch {}
+  // Chrome CDP approach (required for Shopee anti-crawler)
+  const data = await searchItems(keyword, limit, pageNum);
+  if (data && data.items && data.items.length > 0) {
+    const products = parseItems(data);
+    return {
+      products,
+      total: data.total_count || products.length,
+      page: opts.page || 1,
+      totalPages: Math.ceil((data.total_count || products.length) / limit),
+      source: "shopee",
+      scrapedAt: new Date().toISOString(),
+    };
   }
-
-  // Fallback: try without cookies (some endpoints work without auth)
-  try {
-    const data = await fetchShopeeApi(keyword, limit, pageNum, "");
-    if (data && data.items && data.items.length > 0) {
-      const products = parseItems(data);
-      return {
-        products,
-        total: data.total_count || products.length,
-        page: opts.page || 1,
-        totalPages: Math.ceil((data.total_count || products.length) / limit),
-        source: "shopee",
-        scrapedAt: new Date().toISOString(),
-      };
-    }
-  } catch {}
 
   return {
     products: [],
@@ -228,3 +282,5 @@ export async function scrapeShopee(
       "Gagal mengambil data dari Shopee. Coba lagi atau gunakan marketplace lain.",
   };
 }
+
+export { closeBrowser as closeShopeeBrowser };

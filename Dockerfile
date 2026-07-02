@@ -10,12 +10,17 @@ RUN apt-get update && apt-get install -y \
     fonts-freefont-ttf \
     fonts-liberation \
     libxss1 \
+    libnss3 \
+    libatk-bridge2.0-0 \
+    libgtk-3-0 \
+    libgbm1 \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 ENV CHROME_BIN=/usr/bin/chromium
+ENV CHROMIUM_BIN=/usr/bin/chromium
 
 # Dependencies stage
 FROM base AS deps
@@ -50,6 +55,10 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/node_modules/chrome-launcher ./node_modules/chrome-launcher
+COPY --from=builder /app/node_modules/chrome-remote-interface ./node_modules/chrome-remote-interface
+COPY --from=builder /app/node_modules/lighthouse ./node_modules/lighthouse
+COPY --from=builder /app/shopee.co.id.txt ./shopee.co.id.txt
 
 USER nextjs
 
