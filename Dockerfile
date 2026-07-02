@@ -1,8 +1,9 @@
 FROM node:20-slim AS base
 
-# Install Chrome dependencies
+# Install Chrome and xvfb dependencies
 RUN apt-get update && apt-get install -y \
     chromium \
+    xvfb \
     fonts-ipafont-gothic \
     fonts-wqy-zenhei \
     fonts-thai-tlwg \
@@ -46,6 +47,7 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 ENV CHROME_BIN=/usr/bin/chromium
 ENV CHROMIUM_BIN=/usr/bin/chromium
+ENV DISPLAY=:99
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
@@ -68,4 +70,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["node", "server.js"]
+CMD ["sh", "-c", "Xvfb :99 -screen 0 1920x1080x24 -ac & sleep 1 && node server.js"]
